@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
-from openerp import models, fields, api, _
-import openerp.addons.decimal_precision as dp
+from odoo import models, fields, api
+import odoo.addons.decimal_precision as dp
 
 
 class ProductSetAd(models.TransientModel):
     _name = 'product.set.add'
     _rec_name = 'product_set_id'
-    _descritpion = "Wizard model to add product set into a quotation"
+    _description = "Wizard model to add product set into a quotation"
 
     product_set_id = fields.Many2one(
-        'product.set', _('Product set'), required=True)
+        'product.set', 'Product set', required=True)
     quantity = fields.Float(
-        string=_('Quantity'),
+        string='Quantity',
         digits=dp.get_precision('Product Unit of Measure'), required=True,
         default=1)
 
@@ -34,9 +34,13 @@ class ProductSetAd(models.TransientModel):
 
     def prepare_sale_order_line_data(self, sale_order_id, set, set_line,
                                      max_sequence=0):
-        return {
+        sale_line = self.env['sale.order.line'].new({
             'order_id': sale_order_id,
             'product_id': set_line.product_id.id,
             'product_uom_qty': set_line.quantity * self.quantity,
+            'product_uom': set_line.product_id.uom_id.id,
             'sequence': max_sequence + set_line.sequence,
-        }
+        })
+        sale_line.product_id_change()
+        line_values = sale_line._convert_to_write(sale_line._cache)
+        return line_values
